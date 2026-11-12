@@ -357,7 +357,7 @@
       return `<button type="button" class="mt ${size}${dark ? ' dark' : ''}" data-s="${esc(t.s)}" style="left:${(t.x / W * 100).toFixed(3)}%;top:${(t.y / H * 100).toFixed(3)}%;width:${(t.w / W * 100).toFixed(3)}%;height:${(t.h / H * 100).toFixed(3)}%;--bg:${heat(c)}" aria-label="$${esc(t.s)} ${c == null ? 'no move' : pct(c)}">${logoTag(t.s)}<b>$${esc(t.s)}</b><span>${c == null ? '—' : pct(c)}</span></button>`; }).join('');
   }
   $('#mapBox').addEventListener('click', e => { const b = e.target.closest('.mt'); if (b) openDrawer(b.dataset.s); });
-  let mapT; addEventListener('resize', () => { clearTimeout(mapT); mapT = setTimeout(() => drawMap(Object.keys(Q).length > 0), 200); });
+  let mapT; addEventListener('resize', () => { clearTimeout(mapT); mapT = setTimeout(() => { const ok = Object.keys(Q).length > 0; drawMap(ok); drawPulse(ok); }, 200); });
 
   // ---------------------------------------------------------------- 06 today: the biggest moves, already memes
   async function drawToday(ok) {
@@ -431,6 +431,33 @@
     $$('#pfp .moods button').forEach(b => b.addEventListener('click', () => { PF.fit = b.dataset.fit; $$('#pfp .moods button').forEach(x => x.classList.toggle('on', x === b)); drawPfp(true); }));
     $('#pfSave').addEventListener('click', e => save($('#pfCanvas'), `memer-pfp-${PF.sym}`, e.currentTarget));
   }
+
+  // ---------------------------------------------------------------- 11 right now: the totals, every stock on one line, the last hour
+  function drawPulse(ok) {
+    const st = $('#pStats'), sw = $('#swarm'), hl = $('#hourList');
+    if (!ok) { sw.innerHTML = "<p class=\"empty\">today's moves can't be read right now.</p>"; hl.innerHTML = ''; st.innerHTML = ''; return; }
+    const live = SYMS.filter(has), mk = market();
+    const vol = SYMS.reduce((a, s) => a + ((Q[s] && Q[s].vol) || 0), 0), trades = SYMS.reduce((a, s) => a + (Q[s] ? (Q[s].nb || 0) + (Q[s].ns || 0) : 0), 0);
+    const up = live.filter(s => Q[s].chg > 0).length, dn = live.filter(s => Q[s].chg < 0).length;
+    const tile = (k, v, sub, c) => `<div class="pt${c ? ' ' + c : ''}"><small>${k}</small><b>${v}</b><span>${sub}</span></div>`;
+    st.innerHTML = tile('volume 24h', short(vol), 'all 40 stocks on solana') + tile('trades 24h', int(trades), 'buys and sells') + tile('green · red', `${up} · ${dn}`, `${live.length} of 40 moved`, up >= dn ? 'g' : 'r') + tile('wall street', mk.open ? 'open' : 'closed', (mk.open ? 'closes in ' : 'opens in ') + dur(mk.ms), mk.open ? 'g' : '');
+    // the swarm: every stock with a move, placed on one line from worst to best
+    const W = sw.clientWidth || 1000, R = W < 600 ? 28 : 36, pad = R / 2 + 10, half = W / 2 - pad, max = Math.max(1, ...live.map(s => Math.abs(Q[s].chg)));
+    const items = live.map(s => ({ s, x: W / 2 + Q[s].chg / max * half })).sort((a, b) => Math.abs(a.x - W / 2) - Math.abs(b.x - W / 2)), placed = [];
+    for (const it of items) for (let k = 0; k < 40; k++) { const off = k === 0 ? 0 : (k % 2 ? 1 : -1) * Math.ceil(k / 2) * (R + 4); if (!placed.some(p => Math.abs(p.x - it.x) < R + 3 && Math.abs(p.y - off) < R + 3)) { it.y = off; placed.push(it); break; } }
+    const span = Math.max(R, ...placed.map(p => Math.abs(p.y))), H = Math.max(220, span * 2 + R + 90), cy = (H - 34) / 2 + 6, seen = sw.classList.contains('seen');
+    sw.style.height = H + 'px';
+    const sorted = live.slice().sort((a, b) => Q[a].chg - Q[b].chg), worst = sorted[0], best = sorted[sorted.length - 1];
+    sw.innerHTML = `<i class="sz" style="top:${cy}px"></i><i class="s0"></i><span class="sl l">−${max.toFixed(1)}%</span><span class="sl c">0%</span><span class="sl r">+${max.toFixed(1)}%</span>` +
+      (worst ? `<span class="se l">worst <b>$${esc(worst)} ${pct(Q[worst].chg)}</b></span><span class="se r">best <b>$${esc(best)} ${pct(Q[best].chg)}</b></span>` : '') +
+      placed.map((p, i) => `<button type="button" class="sd ${cls(Q[p.s].chg)}" data-s="${esc(p.s)}" title="$${esc(p.s)} ${pct(Q[p.s].chg)}" aria-label="$${esc(p.s)} ${pct(Q[p.s].chg)}" style="left:${(p.x - R / 2).toFixed(1)}px;top:${(cy + p.y - R / 2).toFixed(1)}px;width:${R}px;height:${R}px;--d:${Math.min(i, 30) * 25}ms">${logoTag(p.s)}</button>`).join('');
+    if (seen) sw.classList.add('seen');
+    // the last hour
+    const hr = SYMS.filter(s => Q[s] && Q[s].h1 != null).sort((a, b) => Math.abs(Q[b].h1) - Math.abs(Q[a].h1)).slice(0, 6);
+    hl.innerHTML = hr.length ? hr.map(s => `<button type="button" class="hm" data-s="${esc(s)}">${logoTag(s)}<b>$${esc(s)}</b><span class="${cls(Q[s].h1)}">${pct(Q[s].h1)}</span><i class="hb ${cls(Q[s].h1)}" style="--w:${Math.min(100, Math.abs(Q[s].h1) / Math.max(.01, Math.abs(Q[hr[0]].h1)) * 100).toFixed(0)}%"></i></button>`).join('') : '<p class="empty">no moves in the last hour yet.</p>';
+  }
+  $('#swarm').addEventListener('click', e => { const b = e.target.closest('.sd'); if (b) openDrawer(b.dataset.s); });
+  $('#hourList').addEventListener('click', e => { const b = e.target.closest('.hm'); if (b) openDrawer(b.dataset.s); });
 
   // ---------------------------------------------------------------- the stock drawer: every number we can read for one stock, and its chart
   let DR = null, lastFocus = null, TF = '24h'; const CH = {};
@@ -513,6 +540,7 @@
     once('#stockGrid', el => { el.classList.add('seen'); setTimeout(() => el.classList.add('done'), 1600); });
     once('#boardList', el => { el.classList.add('seen', 'anim'); setTimeout(() => el.classList.remove('anim'), 2500); });
     once('#mapBox', el => { el.classList.add('seen'); });
+    once('#swarm', el => { el.classList.add('seen'); });
     const links = $$('.nav a[href^="#"]');
     if ('IntersectionObserver' in window) { const spy = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) links.forEach(a => a.classList.toggle('on', a.getAttribute('href') === '#' + e.target.id)); }), { rootMargin: '-45% 0px -50% 0px' }); $$('main section[id]').forEach(s => spy.observe(s)); }
     if (!REDUCED && HOVER) { const hk = $('.hero-key'); $('.hero').addEventListener('pointermove', e => { const x = e.clientX / innerWidth - .5, y = e.clientY / innerHeight - .5; hk.style.translate = `${(x * 22).toFixed(1)}px ${(y * 14).toFixed(1)}px`; hk.style.rotate = `${(x * 3).toFixed(2)}deg`; }); }
@@ -521,13 +549,13 @@
   if (CONFIG.x) { const x = $('#xLink'); x.hidden = false; x.href = CONFIG.x; }
 
   // ---------------------------------------------------------------- go
-  words(); $$('.band .panel, .qa details, .chips, .tools, .src, .maplegend').forEach(e => e.classList.add('rv'));
+  words(); $$('.band .panel:not(.swarm), .chips, .tools, .src, .maplegend, .pstats, .hour').forEach(e => e.classList.add('rv'));
   intro(); heroGrid(); orbit(); setupMaker(); setupVs(); setupBag(); setupPfp(); drawStocks(); drawWall(); tapes(false); reveal(); watch();
   Promise.all([document.fonts.load('800 50px Inter'), document.fonts.load('500 20px JBM'), document.fonts.load('700 20px JBM')]).catch(() => {}).then(() => { drawMaker(); drawVs(); drawPfp(); drawBag(); });
   let todayDone = false;
   async function refresh(first) {
     const ok = first ? await firstLoad : await loadQuotes();
-    drawStocks(); tapes(ok); drawMaker(); drawVs(); slots(); drawBag(); drawBoard(ok); drawWall(); drawSectors(ok); drawMap(ok); if (DR) fillDrawer();
+    drawStocks(); tapes(ok); drawMaker(); drawVs(); slots(); drawBag(); drawBoard(ok); drawWall(); drawSectors(ok); drawMap(ok); drawPulse(ok); if (DR) fillDrawer();
     if (first || (ok && !todayDone)) { drawToday(ok); todayDone = ok; }
     if (first) { const m = location.hash.match(/^#s=([A-Za-z.]+)$/); if (m && SYMS.includes(decodeURIComponent(m[1]).toUpperCase())) setTimeout(() => openDrawer(decodeURIComponent(m[1]).toUpperCase()), html.classList.contains('ready') ? 200 : 5200); }
   }
