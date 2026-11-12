@@ -50,21 +50,43 @@
 
   // ---------------------------------------------------------------- live prices: tokenized stocks on solana, from jupiter
   const Q = {};
-  async function quote(sym) {
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  const MK = 'memer:mints:v1';
+  // one search per ticker to find its token once (kept in this browser), then every refresh is one request for all of them
+  async function findMint(sym) {
     try {
       const r = await fetch(`https://lite-api.jup.ag/tokens/v2/search?query=${encodeURIComponent(sym + 'x')}`);
-      if (!r.ok) return null; const arr = await r.json(); const want = (sym + 'x').toLowerCase();
+      if (r.status === 429 || r.status >= 500) return 'retry'; if (!r.ok) return null;
+      const arr = await r.json(), want = (sym + 'x').toLowerCase();
       const c = (Array.isArray(arr) ? arr : []).filter(t => String(t.symbol || '').toLowerCase() === want);
-      if (!c.length) return null;
       c.sort((a, b) => (b.isVerified ? 1 : 0) - (a.isVerified ? 1 : 0) || (b.liquidity || 0) - (a.liquidity || 0));
-      const t = c[0], s = t.stats24h || {};
-      return { mint: t.id, price: typeof t.usdPrice === 'number' ? t.usdPrice : null, chg: typeof s.priceChange === 'number' ? s.priceChange : null };
-    } catch { return null; }
+      return c[0] && c[0].isVerified ? c[0].id : null;
+    } catch { return 'retry'; }
+  }
+  async function mints() {
+    let m = {}; try { m = JSON.parse(localStorage.getItem(MK) || '{}') || {}; } catch {}
+    const need = STOCKS.map(([s]) => s).filter(s => !m[s]);
+    for (let i = 0; i < need.length; i += 3) {
+      await Promise.all(need.slice(i, i + 3).map(async s => { for (let t = 0; t < 4; t++) { const id = await findMint(s); if (id === 'retry') { await sleep(600 * (t + 1)); continue; } if (id) m[s] = id; break; } }));
+      if (i + 3 < need.length) await sleep(250);
+    }
+    try { localStorage.setItem(MK, JSON.stringify(m)); } catch {}
+    return m;
   }
   async function loadQuotes() {
-    const res = await Promise.all(STOCKS.map(([s]) => quote(s)));
-    STOCKS.forEach(([s], i) => { Q[s] = res[i]; });
-    return res.some(Boolean);
+    const m = await mints(), ids = Object.values(m); if (!ids.length) return false;
+    for (let t = 0; t < 3; t++) {
+      try {
+        const r = await fetch(`https://lite-api.jup.ag/tokens/v2/search?query=${ids.join(',')}`);
+        if (r.status === 429 || r.status >= 500) { await sleep(800 * (t + 1)); continue; }
+        const arr = await r.json(); if (!Array.isArray(arr)) return false;
+        const by = Object.fromEntries(Object.entries(m).map(([s, id]) => [id, s]));
+        for (const tk of arr) { const s = by[tk.id]; if (!s) continue; const st = tk.stats24h || {};
+          Q[s] = { mint: tk.id, price: typeof tk.usdPrice === 'number' ? tk.usdPrice : null, chg: typeof st.priceChange === 'number' ? st.priceChange : null }; }
+        return Object.keys(Q).length > 0;
+      } catch { await sleep(800 * (t + 1)); }
+    }
+    return false;
   }
   const mood = s => { const q = Q[s]; if (!q || q.chg == null) return null; return Math.abs(q.chg) < .3 ? 'flat' : q.chg > 0 ? 'up' : 'down'; };
   const keyImg = (s, m) => `/assets/img/keys/${s}-${m === 'down' ? 'down' : 'up'}.webp`;
