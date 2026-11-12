@@ -13,12 +13,14 @@
 <meta name="twitter:description" content="turn any stock into a meme">
 <meta name="twitter:image" content="https://memer-smoky.vercel.app/assets/img/og.jpg">
 <meta name="theme-color" content="#55ee96">
-<link rel="icon" type="image/png" href="/assets/img/fav-64.png">
-<link rel="apple-touch-icon" href="/assets/img/apple-touch.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/img/fav-32.png?v=3">
+<link rel="icon" type="image/png" sizes="64x64" href="/assets/img/fav-64.png?v=3">
+<link rel="icon" type="image/png" sizes="192x192" href="/assets/img/fav-192.png?v=3">
+<link rel="apple-touch-icon" href="/assets/img/apple-touch.png?v=3">
 <link rel="preload" href="/assets/fonts/inter-800.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/assets/fonts/jbm-500.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/assets/img/hero.webp" as="image">
-<link rel="stylesheet" href="/assets/memer.css?v=2">
+<link rel="stylesheet" href="/assets/memer.css?v=3">
 <script>try{if(sessionStorage.getItem('memer:in')||matchMedia('(prefers-reduced-motion: reduce)').matches)document.documentElement.classList.add('no-intro')}catch(e){}</script>
 </head>
 <body>
@@ -38,8 +40,9 @@
   <nav aria-label="sections">
     <a href="#maker" class="hot">make a meme</a>
     <a href="#stocks">stocks</a>
-    <a href="#today">today</a>
-    <a href="#how">how</a>
+    <a href="#versus">versus</a>
+    <a href="#board">board</a>
+    <a href="#pfp">pfp</a>
     <a href="#faq">faq</a>
     <button type="button" class="ca" id="caPill" hidden><b>$MEMER</b><code id="caTxt"></code><em>copy</em></button>
     <a class="x" id="xLink" href="#" target="_blank" rel="noopener noreferrer" aria-label="memer on X" hidden>𝕏</a>
@@ -55,6 +58,7 @@
         <p class="sub">turn any stock into a meme</p>
         <p class="lede">pick a stock. its key reacts to today's real move: a crown on green days, a beanie on red ones. save it, post it.</p>
         <div class="btns"><a class="btn ink" href="#maker">make a meme</a><a class="btn ghost" href="#stocks">see the stocks</a></div>
+        <div class="mood" id="mood"><span class="mg"><i></i><b id="mGreen">—</b> green</span><span class="mr"><i></i><b id="mRed">—</b> red</span><span class="mt">keys today, from live prices</span></div>
       </div>
       <div class="hero-key"><img src="/assets/img/hero.webp" alt="memer: a green keycap wearing pixel sunglasses" width="900" height="900"></div>
     </div>
@@ -64,21 +68,26 @@
   <section class="band" id="stocks">
     <div class="eyebrow">01 · the stocks</div>
     <h2>every stock gets a key. live from solana.</h2>
+    <div class="chips" id="chips" role="group" aria-label="filter the stocks">
+      <button type="button" data-f="all" class="on">all</button><button type="button" data-f="up">green today</button><button type="button" data-f="down">red today</button><button type="button" data-f="tech">tech</button><button type="button" data-f="crypto">crypto</button><button type="button" data-f="funds">funds</button><button type="button" data-f="classic">blue chips</button><button type="button" data-f="meme">meme stocks</button>
+    </div>
     <div class="stocks" id="stockGrid"></div>
-    <p class="src" id="stockSrc">prices: tokenized stocks on solana, read live from jupiter.</p>
+    <p class="src" id="stockSrc">prices: tokenized stocks on solana (xStocks), read live from jupiter.</p>
   </section>
 
-  <section class="band dim" id="maker">
+  <div class="tape slim"><div class="tape-in rev" id="tape2"></div></div>
+
+  <section class="band" id="maker">
     <div class="eyebrow">02 · the maker</div>
     <h2>one stock in. one meme out.</h2>
-    <div class="maker">
+    <div class="maker panel">
       <div class="mk-l">
         <label class="pick"><span>stock</span><select id="mkStock" aria-label="pick a stock"></select></label>
         <div class="moods" role="group" aria-label="mood">
           <button type="button" data-mood="auto" class="on">today's move</button><button type="button" data-mood="up">green</button><button type="button" data-mood="down">red</button>
         </div>
         <label class="pick"><span>line</span><input id="mkLine" maxlength="70" spellcheck="false" autocomplete="off"></label>
-        <div class="mk-row"><button type="button" class="btn ghost sm" id="mkShuffle">new line</button></div>
+        <div class="mk-row"><button type="button" class="btn ghost sm" id="mkShuffle">new line</button><button type="button" class="btn ghost sm" id="mkRandom">random stock</button></div>
         <div class="mk-go">
           <button type="button" class="btn ink" id="mkSave">save the meme</button>
           <button type="button" class="btn ghost" id="mkPost">post on 𝕏</button>
@@ -89,35 +98,72 @@
     </div>
   </section>
 
+  <section class="band" id="versus">
+    <div class="eyebrow">03 · versus</div>
+    <h2>pair any two stocks. one meme decides.</h2>
+    <div class="maker panel">
+      <div class="mk-l">
+        <label class="pick"><span>left</span><select id="vsA" aria-label="left stock"></select></label>
+        <label class="pick"><span>right</span><select id="vsB" aria-label="right stock"></select></label>
+        <div class="mk-row"><button type="button" class="btn ghost sm" id="vsSwap">swap</button><button type="button" class="btn ghost sm" id="vsRandom">random pair</button></div>
+        <div class="mk-go"><button type="button" class="btn ink" id="vsSave">save the meme</button><button type="button" class="btn ghost" id="vsPost">post on 𝕏</button></div>
+        <p class="mk-note" id="vsNote"></p>
+      </div>
+      <div class="mk-r"><canvas id="vsCanvas" width="1200" height="675" aria-label="the versus meme"></canvas></div>
+    </div>
+  </section>
+
   <section class="band" id="today">
-    <div class="eyebrow">03 · today</div>
+    <div class="eyebrow">04 · today</div>
     <h2>today's biggest moves, already memes.</h2>
     <div class="today" id="todayGrid"><p class="empty">reading today's moves<span class="dots"></span></p></div>
   </section>
 
-  <section class="band dim" id="how">
-    <div class="eyebrow">04 · how</div>
+  <div class="tape slim"><div class="tape-in" id="tape3"></div></div>
+
+  <section class="band" id="board">
+    <div class="eyebrow">05 · the board</div>
+    <h2>every key, ranked by today's move.</h2>
+    <div class="board panel" id="boardList"><p class="empty">reading today's moves<span class="dots"></span></p></div>
+  </section>
+
+  <section class="band" id="pfp">
+    <div class="eyebrow">06 · the pfp</div>
+    <h2>wear the shades. any stock, any colour.</h2>
+    <div class="maker panel">
+      <div class="mk-l">
+        <label class="pick"><span>stock</span><select id="pfStock" aria-label="pfp stock"></select></label>
+        <div class="swatches" id="pfColors" role="group" aria-label="background colour"></div>
+        <div class="moods" role="group" aria-label="fit"><button type="button" data-fit="up" class="on">crown</button><button type="button" data-fit="down">beanie</button></div>
+        <div class="mk-go"><button type="button" class="btn ink" id="pfSave">save the pfp</button></div>
+      </div>
+      <div class="mk-r pf"><canvas id="pfCanvas" width="1000" height="1000" aria-label="your pfp"></canvas></div>
+    </div>
+  </section>
+
+  <section class="band" id="how">
+    <div class="eyebrow">07 · how</div>
     <div class="steps">
-      <div class="step rv"><b>1</b><h3>pick a stock</h3><p>NVIDIA, Tesla, Apple, the S&amp;P 500 and more. every one is a key with its ticker on top.</p></div>
+      <div class="step rv"><b>1</b><h3>pick a stock</h3><p>40 of them: NVIDIA, Tesla, SpaceX, GameStop, the S&amp;P 500 and more. every one is a key with its ticker on top.</p></div>
       <div class="step rv"><b>2</b><h3>it reacts</h3><p>the key reads today's real move. green day: the crown comes out. red day: beanie on. the shades always stay.</p></div>
-      <div class="step rv"><b>3</b><h3>post it</h3><p>pick a line or write your own, save the meme and post it. the numbers on it are real.</p></div>
+      <div class="step rv"><b>3</b><h3>post it</h3><p>a meme, a versus, a pfp. save it and post it. every number on it is real.</p></div>
     </div>
   </section>
 
   <section class="band" id="faq">
-    <div class="eyebrow">05 · faq</div>
+    <div class="eyebrow">08 · faq</div>
     <div class="qa">
       <details><summary>what is memer?</summary><p>a meme maker for stocks. every stock is a green key in pixel shades, dressed by today's real move.</p></details>
-      <details><summary>where do the numbers come from?</summary><p>from tokenized versions of the stocks on solana (xStocks), read live from jupiter's public token data. if it can't be read, memer shows a dash instead of a number.</p></details>
-      <details><summary>are these real stocks?</summary><p>they're tokens on solana that track the stock's price. memer only reads their prices; it never buys, sells or holds anything.</p></details>
+      <details><summary>where do the numbers come from?</summary><p>from tokenized versions of the stocks on solana (xStocks), read live from jupiter's public token data. if a number can't be read, memer shows a dash instead.</p></details>
+      <details><summary>are these real stocks?</summary><p>they're tokens on solana that track each stock's price. memer only reads the prices. it never buys, sells or holds anything.</p></details>
       <details><summary>is this financial advice?</summary><p>no. it's memes. a green day is a crown, a red day is a beanie, and that's all it means.</p></details>
-      <details><summary>can I use the memes?</summary><p>yes. save them, post them, use them anywhere. no company logos are drawn, just tickers on keys.</p></details>
-      <details><summary>why keys?</summary><p>memer is a key in pixel shades. press it, get a meme.</p></details>
+      <details><summary>can I use the memes?</summary><p>yes. save them, post them, use them as your pfp. no company logos are drawn, just tickers on keys.</p></details>
+      <details><summary>what's versus?</summary><p>pick any two stocks and memer puts their keys face to face with today's real moves. the bigger move wins the meme.</p></details>
     </div>
   </section>
 </main>
 
 <div class="toast" id="toast" role="status"></div>
-<script src="/assets/memer.js?v=2" defer></script>
+<script src="/assets/memer.js?v=3" defer></script>
 </body>
 </html>
