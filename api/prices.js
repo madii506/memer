@@ -25,7 +25,9 @@ module.exports = async (req, res) => {
     if (!r.ok) throw new Error('upstream ' + r.status);
     const arr = await r.json(), q = {};
     for (const t of Array.isArray(arr) ? arr : []) { const s = by[t.id]; if (!s) continue; const st = t.stats24h || {};
-      q[s] = { price: num(t.usdPrice), chg: num(st.priceChange), mcap: num(t.mcap), vol: num((st.buyVolume || 0) + (st.sellVolume || 0)) }; }
+      const h1 = t.stats1h || {}, h6 = t.stats6h || {};
+      q[s] = { price: num(t.usdPrice), chg: num(st.priceChange), h1: num(h1.priceChange), h6: num(h6.priceChange), mcap: num(t.mcap), liq: num(t.liquidity), hold: num(t.holderCount),
+        buy: num(st.buyVolume), sell: num(st.sellVolume), vol: num((st.buyVolume || 0) + (st.sellVolume || 0)), nb: num(st.numBuys), ns: num(st.numSells), tr: num(st.numTraders), mint: t.id }; }
     if (!Object.keys(q).length) throw new Error('empty');
     res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate'); res.setHeader('CDN-Cache-Control', 'public, s-maxage=30, stale-while-revalidate=300');
     res.end(JSON.stringify({ ok: true, at: Date.now(), q }));
