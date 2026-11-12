@@ -54,6 +54,7 @@
   const int = v => v == null ? '—' : Math.round(v).toLocaleString('en-US');
   const tileOf = s => TILE[SYMS.indexOf(s) % 6];
   const cls = c => c == null ? '' : c < 0 ? 'dn' : 'up';
+  const lk = (s, m, c, bd) => `<span class="lg-big" style="--l:url('${LOGO(s)}')"></span><i class="kk" style="--k:url(${keyImg(s, m)})${bd ? ';--bd:' + bd : ''}"></i>`;
   const wears = m => m === 'down' ? 'beanie on' : m === 'flat' ? 'a flat day' : m ? 'crown on' : 'no move yet';
 
   // ---------------------------------------------------------------- the opening: a ticker board, a bare key, the shades come down
@@ -64,14 +65,14 @@
     const narrow = innerWidth < 640, cols = narrow ? 3 : innerWidth < 1100 ? 5 : 6, rows = narrow ? 9 : 6;
     const list = Array.from({ length: cols * rows }, (_, i) => SYMS[(i * 7) % SYMS.length]);
     const board = $('#iBoard'); board.style.setProperty('--cols', cols);
-    board.innerHTML = list.map((s, i) => `<div class="i-cell" style="--dl:${(i % cols) * 45 + Math.floor(i / cols) * 60}ms"><b></b><span></span></div>`).join('');
+    board.innerHTML = list.map((s, i) => `<div class="i-cell" style="--dl:${(i % cols) * 45 + Math.floor(i / cols) * 60}ms">${logoTag(s)}<b></b><span></span></div>`).join('');
     const cells = [...board.children];
     $('#iBurst').innerHTML = Array.from({ length: 14 }, (_, i) => `<i style="--a:${(i * 360 / 14 + (i % 3) * 8).toFixed(0)}deg;--d:${190 + (i * 47) % 170}px;--dl:${(i % 4) * 40}ms;--sp:${(i % 2 ? 1 : -1) * (40 + i * 9)}deg;--c:${TILE[i % 6]};--k:url(${FIT(i)})"></i>`).join('');
     // split-flap text: every character spins through glyphs, then settles left to right
     const GL = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789$+-.%', flips = new Map();
     const flip = (node, to, delay) => flips.set(node, { to, t0: performance.now() + delay });
     const tick = () => { const now = performance.now(); for (const [node, f] of flips) { const k = now - f.t0; if (k < 0) continue; const done = Math.floor(k / 34); let out = ''; for (let i = 0; i < f.to.length; i++) out += i < done || f.to[i] === ' ' ? f.to[i] : GL[(Math.random() * GL.length) | 0]; node.textContent = out; if (done >= f.to.length) flips.delete(node); } };
-    const paint = first => cells.forEach((c, i) => { const s = list[i], sp = c.lastChild; sp.className = cls(has(s) ? Q[s].chg : null); if (first) flip(c.firstChild, '$' + s, 150 + i * 16); flip(sp, has(s) ? pct(Q[s].chg) : NAME[s], (first ? 300 : 0) + i * 14); });
+    const paint = first => cells.forEach((c, i) => { const s = list[i], sp = c.lastChild; sp.className = cls(has(s) ? Q[s].chg : null); if (first) flip(c.querySelector('b'), '$' + s, 150 + i * 16); flip(sp, has(s) ? pct(Q[s].chg) : NAME[s], (first ? 300 : 0) + i * 14); });
     let over = false; const timers = [];
     const at = (ms, fn) => timers.push(setTimeout(() => { if (!over) fn(); }, ms));
     timers.push(setInterval(tick, 45));
@@ -130,7 +131,7 @@
     $('#tape2').innerHTML = b.join('') + b.join('');
   }
   function drawWall() {
-    const one = hide => SYMS.map((s, i) => { const m = mood(s); return `<button type="button" class="wt" data-s="${esc(s)}"${hide ? ' tabindex="-1" aria-hidden="true"' : ''}><span class="wk" style="--c:${TILE[i % 6]};--k:url(${keyImg(s, m)})">${logoTag(s)}</span><b>$${esc(s)}</b><span class="wc ${cls(has(s) ? Q[s].chg : null)}">${has(s) ? pct(Q[s].chg) : '—'}</span></button>`; }).join('');
+    const one = hide => SYMS.map((s, i) => { const m = mood(s); return `<button type="button" class="wt" data-s="${esc(s)}"${hide ? ' tabindex="-1" aria-hidden="true"' : ''}><span class="wk lk" style="--c:${TILE[i % 6]}">${lk(s, m)}</span><b>$${esc(s)}</b><span class="wc ${cls(has(s) ? Q[s].chg : null)}">${has(s) ? pct(Q[s].chg) : '—'}</span></button>`; }).join('');
     $('#wall').innerHTML = one(false) + one(true);
   }
 
@@ -142,7 +143,7 @@
       const q = Q[s], m = mood(s), p = q ? q.price : null, fl = p != null && PREV[s] != null && p !== PREV[s] ? (p > PREV[s] ? ' flash-up' : ' flash-dn') : '';
       if (p != null) PREV[s] = p;
       return `<button type="button" class="sk${s === M.sym ? ' sel' : ''}${fits(s) ? '' : ' hide'}" data-s="${esc(s)}" style="--dl:${Math.min(i, 24) * 30}ms">
-        <span class="ki" style="--c:${TILE[i % 6]}"><i class="kk" style="--k:url(${keyImg(s, m)});--bd:${(-((i * .37) % 3.6)).toFixed(2)}s"></i>${logoTag(s)}</span><b>$${esc(s)}</b><span class="n">${esc(n)}</span>
+        <span class="ki lk" style="--c:${TILE[i % 6]}">${lk(s, m, TILE[i % 6], (-((i * .37) % 3.6)).toFixed(2) + 's')}</span><b>$${esc(s)}</b><span class="n">${esc(n)}</span>
         <span class="p${fl}"><span>${usd(p)}</span><span class="${m === 'down' ? 'dn' : m ? 'up' : ''}">${has(s) ? pct(q.chg) : '—'}</span></span></button>`;
     }).join('');
   }
@@ -172,9 +173,9 @@
     const q = Q[sym]; ctx.fillStyle = BG(m); ctx.fillRect(0, 0, W, H); dots(ctx, W, H);
     if (im) ctx.drawImage(im, W - 600, (H - 600) / 2 + 8, 600, 600);
     ctx.fillStyle = '#0b0d0c'; ctx.textBaseline = 'alphabetic';
-    ctx.font = `800 ${sym.length > 4 ? 104 : 124}px Inter`; ctx.fillText('$' + sym, 60, 168);
-    logoAt(ctx, lg, 64, 186, 42, 11);
-    ctx.font = '500 28px JBM'; ctx.globalAlpha = .7; ctx.fillText(NAME[sym] || '', lg ? 120 : 66, 216); ctx.globalAlpha = 1;
+    const tx = lg ? 206 : 60; logoAt(ctx, lg, 60, 50, 124, 30);
+    ctx.font = `800 ${lg ? (sym.length > 4 ? 92 : sym.length > 3 ? 108 : 124) : (sym.length > 4 ? 104 : 124)}px Inter`; ctx.fillText('$' + sym, tx, 158);
+    ctx.font = '500 28px JBM'; ctx.globalAlpha = .7; ctx.fillText(NAME[sym] || '', tx + 4, 206); ctx.globalAlpha = 1;
     if (has(sym)) { ctx.font = '700 58px JBM'; ctx.fillText(pct(q.chg) + ' today', 62, 312); ctx.font = '500 30px JBM'; ctx.globalAlpha = .7; ctx.fillText(usd(q.price), 66, 360); ctx.globalAlpha = 1; }
     ctx.font = '800 50px Inter'; wrap(ctx, line, 560).slice(0, 3).forEach((l, i) => ctx.fillText(l, 62, (has(sym) ? 460 : 330) + i * 58));
     foot(ctx, H);
@@ -192,7 +193,7 @@
     const ctx = cv.getContext('2d'), W = 1200, H = 675; cv.width = W; cv.height = H;
     ctx.fillStyle = BG(ma); ctx.fillRect(0, 0, W / 2, H); ctx.fillStyle = BG(mb); ctx.fillRect(W / 2, 0, W / 2, H); dots(ctx, W, H);
     if (ia) ctx.drawImage(ia, 70, 50, 430, 430); if (ib) ctx.drawImage(ib, W - 500, 50, 430, 430);
-    logoAt(ctx, la, 64, 52, 64, 16); logoAt(ctx, lb, W - 128, 52, 64, 16);
+    logoAt(ctx, la, 54, 40, 104, 26); logoAt(ctx, lb, W - 158, 40, 104, 26);
     ctx.fillStyle = '#0b0d0c'; ctx.textAlign = 'center';
     ctx.font = '800 64px Inter'; ctx.fillText('$' + a, 285, 506); ctx.fillText('$' + b, W - 285, 506);
     ctx.font = '700 36px JBM'; if (has(a)) ctx.fillText(pct(Q[a].chg), 285, 552); if (has(b)) ctx.fillText(pct(Q[b].chg), W - 285, 552);
@@ -276,7 +277,7 @@
     const rows = [...SYMS].sort((a, b) => (has(b) ? Q[b].chg : -1e9) - (has(a) ? Q[a].chg : -1e9));
     const max = Math.max(1, ...SYMS.filter(has).map(s => Math.abs(Q[s].chg)));
     box.innerHTML = rows.map((s, i) => { const m = mood(s), c = has(s) ? Q[s].chg : null, w = c == null ? 0 : Math.min(50, Math.abs(c) / max * 50);
-      return `<div class="brow${i > 9 ? ' x' : ''}" data-s="${esc(s)}" style="--r:${Math.min(i, 14)}"><span class="rk">${String(i + 1).padStart(2, '0')}</span><span class="bk" style="--c:${tileOf(s)};--k:url(${keyImg(s, m)})">${logoTag(s)}</span>
+      return `<div class="brow${i > 9 ? ' x' : ''}" data-s="${esc(s)}" style="--r:${Math.min(i, 14)}"><span class="rk">${String(i + 1).padStart(2, '0')}</span><span class="bk" style="--l:url('${LOGO(s)}')"><i style="--k:url(${keyImg(s, m)})"></i></span>
         <span class="bt"><b>$${esc(s)}</b><span>${esc(NAME[s])}</span></span><span class="bp">${usd(Q[s] && Q[s].price)}</span>
         <span class="bc ${cls(c)}">${c == null ? '—' : pct(c)}</span>
         <span class="bar">${c == null ? '' : `<i class="${cls(c)}" style="--w:${w.toFixed(1)}%"></i>`}</span>
@@ -305,7 +306,7 @@
         <div class="meter"><i class="g" style="--w:${live.length ? (up / live.length * 100).toFixed(1) : 0}%"></i><i class="r" style="--w:${live.length ? (dn / live.length * 100).toFixed(1) : 0}%"></i></div>
         <div class="cnt">${up} green · ${dn} red${quiet ? ` · ${quiet} no data` : ''}</div>
         ${best ? lead(best, 'best') : ''}${worst && worst !== best ? lead(worst, 'worst') : ''}
-        <div class="ks">${mem.slice(0, 8).map((s, j) => `<i style="--c:${tileOf(s)};--k:url(${keyImg(s, mood(s))});--j:${j}"></i>`).join('')}</div></div>`;
+        <div class="ks">${mem.slice(0, 8).map((s, j) => `<i style="--l:url('${LOGO(s)}');--j:${j}" title="$${esc(s)}"></i>`).join('')}</div></div>`;
     }).join('');
     reveal();
   }
@@ -334,7 +335,7 @@
     const s = DR; if (!s) return; const q = Q[s] || {}, m = mood(s), i = SYMS.indexOf(s);
     $('#drLogo').style.setProperty('--l', `url('${LOGO(s)}')`);
     $('#drSym').textContent = '$' + s; $('#drName').textContent = NAME[s] + ' · ' + GROUP[s].split(' ').map(g => GLABEL[g]).join(' · ');
-    $('#drKey').style.setProperty('--c', TILE[i % 6]); $('#drKey i').style.setProperty('--k', `url(${keyImg(s, m)})`);
+    $('#drKey').style.setProperty('--c', TILE[i % 6]); $('#drKey').innerHTML = lk(s, m);
     $('#drPrice').textContent = usd(q.price);
     const c = $('#drChg'); c.textContent = (has(s) ? pct(q.chg) + ' in 24h · ' : '') + wears(m); c.className = m === 'down' ? 'dn' : m ? 'up' : '';
     const mv = (k, v) => `<div><small>${k}</small><b class="${cls(v)}">${v == null ? '—' : pct(v)}</b></div>`;
