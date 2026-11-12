@@ -22,7 +22,7 @@
 <link rel="preload" href="/assets/img/hero.webp" as="image">
 <link rel="preload" href="/assets/img/intro-bare.webp" as="image">
 <link rel="preload" href="/assets/img/intro-shades.webp" as="image">
-<link rel="stylesheet" href="/assets/memer.css?v=5">
+<link rel="stylesheet" href="/assets/memer.css?v=6">
 <script>try{if(sessionStorage.getItem('memer:in')||matchMedia('(prefers-reduced-motion: reduce)').matches)document.documentElement.classList.add('no-intro')}catch(e){}</script>
 </head>
 <body>
@@ -41,7 +41,6 @@
     </div>
     <div class="i-burst" id="iBurst"></div>
   </div>
-  <div class="i-word"><b>memer</b><span id="iSub"></span></div>
   <button class="i-skip" type="button" aria-label="skip the intro"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 6 6-6 6M13 6l6 6-6 6"/></svg></button>
 </div>
 
@@ -67,8 +66,6 @@
         <p class="sub">turn any stock into a meme</p>
         <p class="lede">pick a stock. its key reacts to today's real move: a crown on green days, a beanie on red ones. save it, post it.</p>
         <div class="btns"><a class="btn ink" href="#maker">make a meme</a><a class="btn ghost" href="#stocks">see the stocks</a></div>
-        <div class="mood" id="mood"><span class="mg"><i></i><b id="mGreen">—</b> green</span><span class="mr"><i></i><b id="mRed">—</b> red</span><span class="mt">keys today, from live prices</span></div>
-        <div class="clock" id="clock"><i></i><b>wall street</b><span id="clockTxt">—</span></div>
       </div>
       <div class="hero-key"><img src="/assets/img/hero.webp" alt="memer: a green keycap wearing pixel sunglasses" width="900" height="900"></div>
     </div>
@@ -173,13 +170,10 @@
       <details><summary>where do the numbers come from?</summary><p>from tokenized versions of the stocks on solana (xStocks), read live from jupiter's public token data. if a number can't be read, memer shows a dash instead.</p></details>
       <details><summary>are these real stocks?</summary><p>they're tokens on solana that track each stock's price. memer only reads the prices. it never buys, sells or holds anything.</p></details>
       <details><summary>is this financial advice?</summary><p>no. it's memes. a green day is a crown, a red day is a beanie, and that's all it means.</p></details>
-      <details><summary>can I use the memes?</summary><p>yes. save them, post them, use them as your pfp. the keys only wear tickers; the small logo badges are there so you can tell which stock is which.</p></details>
+      <details><summary>can I use the memes?</summary><p>yes. save them, post them, use them as your pfp. the stock logos belong to their companies; memer isn't tied to any of them.</p></details>
       <details><summary>what are xStocks?</summary><p>tokens on solana that track a real stock or fund, issued by backed under the xStocks name. memer reads their live price, volume, traders and holders from jupiter.</p></details>
       <details><summary>when is a key green, red or flat?</summary><p>the 24h move decides. inside ±0.3% it's a flat day. above that the crown comes out, below it the beanie goes on. the shades never come off.</p></details>
-      <details><summary>do they trade when wall street is closed?</summary><p>the tokens trade on solana around the clock, but the stock itself only trades in market hours, so moves outside them can be thin. the clock under the hero shows if wall street is open.</p></details>
-      <details><summary>how fresh are the numbers?</summary><p>every stock is read in one request that's cached for 30 seconds, and the page refreshes it every minute while it's open. tap any stock for its 1h, 6h and 24h moves.</p></details>
-      <details><summary>whose logos are those?</summary><p>each badge is the stock's own token icon as published for its xStock. the logos belong to their companies, and memer isn't affiliated with any of them.</p></details>
-      <details><summary>what's versus?</summary><p>pick any two stocks and memer puts their keys face to face with today's real moves. the bigger move wins the meme.</p></details>
+      <details><summary>do they trade when wall street is closed?</summary><p>the tokens trade on solana around the clock, but the stock itself only trades in market hours, so moves outside them can be thin. tap any stock to see if wall street is open right now.</p></details>
     </div>
   </section>
 </main>
@@ -200,6 +194,6 @@
 </div>
 
 <div class="toast" id="toast" role="status"></div>
-<script src="/assets/memer.js?v=5" defer></script>
+<script src="/assets/memer.js?v=6" defer></script>
 </body>
 </html>
