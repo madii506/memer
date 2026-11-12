@@ -57,37 +57,29 @@
   const lk = (s, m, c, bd) => `<span class="lg-big" style="--l:url('${LOGO(s)}')"></span><i class="kk" style="--k:url(${keyImg(s, m)})${bd ? ';--bd:' + bd : ''}"></i>`;
   const wears = m => m === 'down' ? 'beanie on' : m === 'flat' ? 'a flat day' : m ? 'crown on' : 'no move yet';
 
-  // ---------------------------------------------------------------- the opening: a ticker board, a bare key, the shades come down
+  // ---------------------------------------------------------------- the opening: no words. a wall of real stocks, a bare key, the shades come down, every stock turns into a meme
   function intro() {
     const el = $('#intro'), ready = () => html.classList.add('ready');
     if (!el || html.classList.contains('no-intro')) { ready(); if (el) el.remove(); return; }
     try { sessionStorage.setItem('memer:in', '1'); } catch {}
-    const narrow = innerWidth < 640, cols = narrow ? 3 : innerWidth < 1100 ? 5 : 6, rows = narrow ? 9 : 6;
-    const list = Array.from({ length: cols * rows }, (_, i) => SYMS[(i * 7) % SYMS.length]);
+    const cols = innerWidth < 640 ? 5 : 8, rows = Math.ceil(SYMS.length / cols), cx = (cols - 1) / 2, cy = (rows - 1) / 2;
     const board = $('#iBoard'); board.style.setProperty('--cols', cols);
-    board.innerHTML = list.map((s, i) => `<div class="i-cell" style="--dl:${(i % cols) * 45 + Math.floor(i / cols) * 60}ms">${logoTag(s)}<b></b><span></span></div>`).join('');
+    board.innerHTML = SYMS.map((s, i) => { const d = Math.hypot(i % cols - cx, Math.floor(i / cols) - cy);
+      return `<div class="i-cell" data-s="${esc(s)}" style="--rd:${Math.round(d * 75)}ms;--c:${TILE[i % 6]}"><div class="i-f"><span class="lg-big" style="--l:url('${LOGO(s)}')"></span><i class="i-bar"></i></div><div class="i-b"></div></div>`; }).join('');
     const cells = [...board.children];
-    $('#iBurst').innerHTML = Array.from({ length: 14 }, (_, i) => `<i style="--a:${(i * 360 / 14 + (i % 3) * 8).toFixed(0)}deg;--d:${190 + (i * 47) % 170}px;--dl:${(i % 4) * 40}ms;--sp:${(i % 2 ? 1 : -1) * (40 + i * 9)}deg;--c:${TILE[i % 6]};--k:url(${FIT(i)})"></i>`).join('');
-    // split-flap text: every character spins through glyphs, then settles left to right
-    const GL = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789$+-.%', flips = new Map();
-    const flip = (node, to, delay) => flips.set(node, { to, t0: performance.now() + delay });
-    const tick = () => { const now = performance.now(); for (const [node, f] of flips) { const k = now - f.t0; if (k < 0) continue; const done = Math.floor(k / 34); let out = ''; for (let i = 0; i < f.to.length; i++) out += i < done || f.to[i] === ' ' ? f.to[i] : GL[(Math.random() * GL.length) | 0]; node.textContent = out; if (done >= f.to.length) flips.delete(node); } };
-    const paint = first => cells.forEach((c, i) => { const s = list[i], sp = c.lastChild; sp.className = cls(has(s) ? Q[s].chg : null); if (first) flip(c.querySelector('b'), '$' + s, 150 + i * 16); flip(sp, has(s) ? pct(Q[s].chg) : NAME[s], (first ? 300 : 0) + i * 14); });
+    const paint = () => cells.forEach(c => { const s = c.dataset.s, m = mood(s); c.querySelector('.i-bar').className = 'i-bar' + (m === 'down' ? ' dn' : m ? ' up' : ''); c.querySelector('.i-b').style.setProperty('--k', `url(${keyImg(s, m)})`); });
+    paint(); firstLoad.then(ok => { if (ok) paint(); });
+    $('#iBurst').innerHTML = Array.from({ length: 16 }, (_, i) => `<i style="--a:${(i * 360 / 16 + (i % 3) * 8).toFixed(0)}deg;--d:${210 + (i * 47) % 190}px;--dl:${(i % 4) * 40}ms;--sp:${(i % 2 ? 1 : -1) * (40 + i * 9)}deg;--k:url('${LOGO(SYMS[(i * 7) % SYMS.length])}')"></i>`).join('');
     let over = false; const timers = [];
     const at = (ms, fn) => timers.push(setTimeout(() => { if (!over) fn(); }, ms));
-    timers.push(setInterval(tick, 45));
-    paint(true);
-    firstLoad.then(ok => { if (ok && !over && !el.classList.contains('drop')) paint(false); });
-    const SUB = 'turn any stock into a meme', sub = $('#iSub');
-    const type = () => { let i = 0; const t = setInterval(() => { sub.textContent = SUB.slice(0, ++i); if (i >= SUB.length) clearInterval(t); }, 24); timers.push(t); };
-    const finish = fast => { if (over) return; over = true; timers.forEach(t => { clearTimeout(t); clearInterval(t); }); flips.clear(); ready(); el.classList.add('out'); setTimeout(() => el.remove(), fast ? 500 : 650); };
+    const finish = fast => { if (over) return; over = true; timers.forEach(clearTimeout); ready(); el.classList.add('out'); setTimeout(() => el.remove(), fast ? 500 : 650); };
     el.addEventListener('pointerdown', () => finish(true)); addEventListener('keydown', e => { if (e.key === 'Escape') finish(true); });
-    requestAnimationFrame(() => el.classList.add('go'));
-    at(1150, () => el.classList.add('drop'));
-    at(1900, () => el.classList.add('deal'));
-    at(2900, () => { el.classList.add('land'); type(); });
-    at(3950, () => el.classList.add('end'));
-    at(4600, () => finish(false));
+    requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('go')));
+    at(1350, () => el.classList.add('drop'));
+    at(2100, () => el.classList.add('deal'));
+    at(3100, () => el.classList.add('land'));
+    at(4250, () => el.classList.add('end'));
+    at(4850, () => finish(false));
   }
   function heroGrid() { const n = innerWidth < 700 ? 36 : 72; $('#heroGrid').innerHTML = Array.from({ length: n }, (_, i) => `<i style="--k:url(${FIT(i * 3)});--dl:${-(i % 9)}s"></i>`).join(''); }
 
@@ -110,7 +102,7 @@
   }
   const dur = ms => { if (ms == null) return 'soon'; const m = Math.max(1, Math.round(ms / 60000)), d = Math.floor(m / 1440), h = Math.floor(m % 1440 / 60), mm = m % 60; return d ? `${d}d ${h}h` : h ? `${h}h ${mm}m` : `${mm}m`; };
   const marketLine = () => { const s = market(); return s.open ? `open · closes in ${dur(s.ms)}` : `closed · opens in ${dur(s.ms)}`; };
-  function clock() { const s = market(); $('#clock').classList.toggle('open', s.open); $('#clockTxt').textContent = s.open ? `open · closes in ${dur(s.ms)}` : `closed · opens in ${dur(s.ms)}`; }
+  function clock() { if (!$('#clock')) return; const s = market(); $('#clock').classList.toggle('open', s.open); $('#clockTxt').textContent = s.open ? `open · closes in ${dur(s.ms)}` : `closed · opens in ${dur(s.ms)}`; }
 
   // ---------------------------------------------------------------- hero mood, tapes, the wall of keys
   function countTo(el, to) {
@@ -121,6 +113,7 @@
   }
   function moodStrip() {
     const g = SYMS.filter(s => has(s) && Q[s].chg > 0).length, r = SYMS.filter(s => has(s) && Q[s].chg < 0).length;
+    if (!$('#mGreen')) return;
     if (g + r) { countTo($('#mGreen'), g); countTo($('#mRed'), r); } else { $('#mGreen').textContent = '—'; $('#mRed').textContent = '—'; }
   }
   function tapes(ok) {
